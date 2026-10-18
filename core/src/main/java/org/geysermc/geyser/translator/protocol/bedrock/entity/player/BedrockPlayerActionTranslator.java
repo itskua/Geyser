@@ -57,6 +57,7 @@ public class BedrockPlayerActionTranslator extends PacketTranslator<PlayerAction
                 attributesPacket.setRuntimeEntityId(entity.geyserId());
                 attributesPacket.getAttributes().addAll(entity.getAttributes().values());
                 session.sendUpstreamPacket(attributesPacket);
+                session.sendAdventureSettings();
 
                 // Bounding box must be sent after a player dies and respawns since 1.19.40
                 entity.updateBoundingBox();
@@ -79,6 +80,7 @@ public class BedrockPlayerActionTranslator extends PacketTranslator<PlayerAction
                 attributesPacket.setRuntimeEntityId(entity.geyserId());
                 attributesPacket.getAttributes().addAll(entity.getAttributes().values());
                 session.sendUpstreamPacket(attributesPacket);
+                session.sendAdventureSettings();
             }
         }
     }

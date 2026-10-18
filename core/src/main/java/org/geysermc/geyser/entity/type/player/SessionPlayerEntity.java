@@ -168,6 +168,7 @@ public class SessionPlayerEntity extends PlayerEntity {
 
     public SessionPlayerEntity(GeyserSession session) {
         super(new EntitySpawnContext(session, VanillaEntities.PLAYER, -1, null), null, null);
+        this.attributes.put(GeyserAttributeType.MOVEMENT_SPEED, GeyserAttributeType.MOVEMENT_SPEED.getAttribute());
 
         valid = true;
     }
@@ -437,6 +438,10 @@ public class SessionPlayerEntity extends PlayerEntity {
                 case SUBMERGED_MINING_SPEED -> {
                     this.submergedMiningSpeed = AttributeUtils.calculateValue(javaAttribute);
                 }
+                case FLYING_SPEED -> {
+                    // Player fly speed on Bedrock is controlled via UpdateAbilitiesPacket;
+                    // ignore here so it does not overwrite "minecraft:movement" in this.attributes.
+                }
                 default -> {
                     super.updateAttribute(javaAttribute, newAttributes);
                 }
@@ -446,7 +451,14 @@ public class SessionPlayerEntity extends PlayerEntity {
 
     @Override
     protected AttributeData calculateAttribute(Attribute javaAttribute, GeyserAttributeType type) {
-        AttributeData attributeData = super.calculateAttribute(javaAttribute, type);
+        AttributeData attributeData;
+        if (type == GeyserAttributeType.MOVEMENT_SPEED && !session.isSprinting()) {
+            // Strip any stale server-side sprinting modifier (e.g. sent in PlayerList#respawn before STOP_SPRINTING is processed)
+            attributeData = type.getAttribute((float) AttributeUtils.calculateValue(javaAttribute,
+                    modifier -> !modifier.getId().value().equals("sprinting")));
+        } else {
+            attributeData = super.calculateAttribute(javaAttribute, type);
+        }
         this.attributes.put(type, attributeData);
         return attributeData;
     }
@@ -528,13 +540,14 @@ public class SessionPlayerEntity extends PlayerEntity {
 
     public void resetAttributes() {
         attributes.clear();
+        AttributeData defaultMovementSpeed = GeyserAttributeType.MOVEMENT_SPEED.getAttribute();
+        attributes.put(GeyserAttributeType.MOVEMENT_SPEED, defaultMovementSpeed);
         maxHealth = GeyserAttributeType.MAX_HEALTH.getDefaultValue();
         blockInteractionRange = GeyserAttributeType.BLOCK_INTERACTION_RANGE.getDefaultValue();
 
         UpdateAttributesPacket attributesPacket = new UpdateAttributesPacket();
         attributesPacket.setRuntimeEntityId(geyserId);
-        attributesPacket.setAttributes(Collections.singletonList(
-                GeyserAttributeType.MOVEMENT_SPEED.getAttribute()));
+        attributesPacket.setAttributes(Collections.singletonList(defaultMovementSpeed));
         session.sendUpstreamPacket(attributesPacket);
     }
 

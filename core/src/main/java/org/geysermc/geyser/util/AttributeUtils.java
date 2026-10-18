@@ -29,6 +29,8 @@ import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.Attribute;
 import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.AttributeModifier;
 import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.ModifierOperation;
 
+import java.util.function.Predicate;
+
 public class AttributeUtils {
     /**
      * Retrieve the base attribute value with all modifiers applied.
@@ -37,20 +39,24 @@ public class AttributeUtils {
      * @return The finished attribute with all modifiers applied.
      */
     public static double calculateValue(Attribute attribute) {
+        return calculateValue(attribute, modifier -> true);
+    }
+
+    public static double calculateValue(Attribute attribute, Predicate<AttributeModifier> filter) {
         double base = attribute.getValue();
         for (AttributeModifier modifier : attribute.getModifiers()) {
-            if (modifier.getOperation() == ModifierOperation.ADD) {
+            if (modifier.getOperation() == ModifierOperation.ADD && filter.test(modifier)) {
                 base += modifier.getAmount();
             }
         }
         double value = base;
         for (AttributeModifier modifier : attribute.getModifiers()) {
-            if (modifier.getOperation() == ModifierOperation.ADD_MULTIPLIED_BASE) {
+            if (modifier.getOperation() == ModifierOperation.ADD_MULTIPLIED_BASE && filter.test(modifier)) {
                 value += base * modifier.getAmount();
             }
         }
         for (AttributeModifier modifier : attribute.getModifiers()) {
-            if (modifier.getOperation() == ModifierOperation.ADD_MULTIPLIED_TOTAL) {
+            if (modifier.getOperation() == ModifierOperation.ADD_MULTIPLIED_TOTAL && filter.test(modifier)) {
                 value *= 1.0D + modifier.getAmount();
             }
         }

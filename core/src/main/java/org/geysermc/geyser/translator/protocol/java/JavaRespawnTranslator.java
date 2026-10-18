@@ -38,8 +38,10 @@ import org.geysermc.geyser.util.ChunkUtils;
 import org.geysermc.geyser.util.DimensionUtils;
 import org.geysermc.geyser.util.EntityUtils;
 import org.geysermc.mcprotocollib.protocol.data.game.entity.player.PlayerSpawnInfo;
+import org.geysermc.mcprotocollib.protocol.data.game.entity.player.PlayerState;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundRespawnPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.ServerboundPlayerLoadedPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundPlayerCommandPacket;
 
 @Translator(packet = ClientboundRespawnPacket.class)
 public class JavaRespawnTranslator extends PacketTranslator<ClientboundRespawnPacket> {
@@ -49,12 +51,17 @@ public class JavaRespawnTranslator extends PacketTranslator<ClientboundRespawnPa
         SessionPlayerEntity entity = session.getPlayerEntity();
         PlayerSpawnInfo spawnInfo = packet.getCommonPlayerSpawnInfo();
 
+        session.setSprinting(false);
+        entity.setFlag(org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag.SPRINTING, false);
+
         if (!packet.isKeepMetadata()) {
             entity.resetMetadata();
         }
 
         if (!packet.isKeepAttributeModifiers()) {
             entity.resetAttributes();
+        } else {
+            entity.getAttributes().put(GeyserAttributeType.MOVEMENT_SPEED, GeyserAttributeType.MOVEMENT_SPEED.getAttribute());
         }
 
         session.setSpawned(false);
@@ -98,5 +105,6 @@ public class JavaRespawnTranslator extends PacketTranslator<ClientboundRespawnPa
         }
 
         session.sendDownstreamGamePacket(ServerboundPlayerLoadedPacket.INSTANCE);
+        session.sendDownstreamGamePacket(new ServerboundPlayerCommandPacket(entity.getEntityId(), PlayerState.STOP_SPRINTING));
     }
 }
